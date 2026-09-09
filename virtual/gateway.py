@@ -8,7 +8,7 @@ def receive_packet(packet):
     """
 
     print("\n🏢 VIRTUAL MUNICIPAL GATEWAY")
-    print("---------------------------")
+    print("----------------------------")
 
     print(
         f"📡 Packet received from: "
@@ -19,17 +19,16 @@ def receive_packet(packet):
 
     payload = packet["payload"]
 
+    # Convert the received LoRaWAN payload
+    # into structured SmartBin data.
     data = {
         "bin_id": packet["device_id"],
         "timestamp": packet["timestamp"],
-
         "fill_level": payload["fill_level"],
         "battery": payload["battery"],
         "status": payload["status"],
-
         "latitude": payload["latitude"],
         "longitude": payload["longitude"],
-
         "communication": "SIMULATED_LORAWAN",
         "gateway": "VIRTUAL_MUNICIPAL_GATEWAY"
     }
@@ -41,25 +40,30 @@ def receive_packet(packet):
 
     print(
         f"Location   : "
-        f"{data['latitude']}, "
-        f"{data['longitude']}"
+        f"{data['latitude']}, {data['longitude']}"
     )
 
     print("\n☁️ Sending data to Firebase...")
 
     try:
-
+        # Get the Firebase database reference.
         database = get_database()
 
-        reference = database.reference(
-            f"bins/{data['bin_id']}"
+        # get_database() already returns a Firebase
+        # Reference, so use .child() instead of
+        # calling .reference() again.
+        reference = (
+            database
+            .child("bins")
+            .child(data["bin_id"])
         )
 
+        # Store the latest SmartBin data.
         reference.set(data)
 
         print("✅ Firebase updated successfully!")
 
     except Exception as error:
-
         print("❌ Firebase update failed.")
         print("Error:", error)
+        

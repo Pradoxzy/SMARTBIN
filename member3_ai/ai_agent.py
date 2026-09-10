@@ -2,62 +2,109 @@ from firebase_config import get_database
 
 
 def calculate_priority(bin_data):
-    """
-    Analyze SmartBin sensor data and calculate collection priority.
-    """
 
-    fill_level = float(bin_data.get("fill_level", 0))
-    battery = float(bin_data.get("battery", 100))
+    fill_level = float(
+        bin_data.get("fill_level", 0)
+    )
 
-    # Calculate priority based mainly on fill level
-    if fill_level >= 80:
-        priority = "HIGH"
-        score = 90
-    elif fill_level >= 50:
-        priority = "MEDIUM"
-        score = 60
+    battery = float(
+        bin_data.get("battery", 100)
+    )
+
+    score = 0
+
+    # Fill level is the main factor
+    if fill_level >= 90:
+        score += 70
+    elif fill_level >= 70:
+        score += 50
+    elif fill_level >= 40:
+        score += 30
     else:
-        priority = "LOW"
-        score = 30
+        score += 10
 
-    # Add a small urgency factor if battery is very low
+    # Battery contribution
     if battery < 20:
+        score += 20
+    elif battery < 40:
+        score += 10
+    else:
         score += 5
 
-    return {
-        "priority": priority,
-        "priority_score": score
-    }
+    # Convert score to priority
+    if score >= 80:
+        priority = "CRITICAL"
+    elif score >= 60:
+        priority = "HIGH"
+    elif score >= 40:
+        priority = "MEDIUM"
+    else:
+        priority = "LOW"
+
+    return priority, score
 
 
-def run_ai_agent():
-    """Read bins from Firebase and analyze them."""
+def analyze_bins():
 
     database = get_database()
 
     bins = database.child("bins").get()
 
     if not bins:
-        print("No SmartBin data found in Firebase.")
-        return
 
-    print("\n===== SMARTBIN AI AGENT =====\n")
+        print("No SmartBin data found.")
+
+        return {}
+
+
+    results = {}
 
     for bin_id, bin_data in bins.items():
 
-        result = calculate_priority(bin_data)
+        if not isinstance(bin_data, dict):
+            continue
 
-        # Save AI result back to Firebase
-        database.child("bins").child(bin_id).update(result)
+        priority, score = calculate_priority(
+            bin_data
+        )
 
-        print(f"Bin: {bin_id}")
-        print(f"Fill Level: {bin_data.get('fill_level', 0)}%")
-        print(f"Battery: {bin_data.get('battery', 0)}%")
-        print(f"Priority: {result['priority']}")
-        print(f"Priority Score: {result['priority_score']}")
-        print("-----------------------------")
+        bin_data["priority"] = priority
+        bin_data["priority_score"] = score
+
+        # Store AI result back in Firebase
+        database \
+            .child("bins") \
+            .child(bin_id) \
+            .update({
+                "priority": priority,
+                "priority_score": score
+            })
+
+        results[bin_id] = bin_data
+
+    return results
 
 
 if __name__ == "__main__":
-    run_ai_agent()
-    
+
+    results = analyze_bins()
+
+    print("\n====================================")
+    print("        SMARTBIN AI ANALYSIS")
+    print("====================================")
+
+    for bin_id, data in results.items():
+
+        print(f"\n{bin_id}")
+        print(
+            f"Fill Level: "
+            f"{data.get('fill_level', 0)}%"
+        )
+        print(
+            f"Priority: "
+            f"{data.get('priority', 'LOW')}"
+        )
+        print(
+            f"Score: "
+            f"{data.get('priority_score', 0)}"
+        )

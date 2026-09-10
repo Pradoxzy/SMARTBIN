@@ -2,120 +2,156 @@ import random
 import time
 from datetime import datetime
 
-from lora_simulator import create_lora_packet, transmit_packet
-
-from gateway import receive_packet
-
-BIN_ID = "BIN-001"
-
-LATITUDE = 12.8236
-LONGITUDE = 80.0454
-
-fill_level = 35
-battery = 95
+from lora_simulator import transmit_packet
 
 
-def simulate_ultrasonic_sensor():
-    """
-    Simulates an ultrasonic sensor measuring
-    how full the waste bin is.
-    """
+# ============================================================
+# 8 VIRTUAL SMART BINS
+# ============================================================
 
-    global fill_level
+BINS = [
+    {
+        "bin_id": "BIN-001",
+        "latitude": 13.0418,
+        "longitude": 80.2341
+    },
+    {
+        "bin_id": "BIN-002",
+        "latitude": 13.0067,
+        "longitude": 80.2572
+    },
+    {
+        "bin_id": "BIN-003",
+        "latitude": 12.9815,
+        "longitude": 80.2180
+    },
+    {
+        "bin_id": "BIN-004",
+        "latitude": 13.0067,
+        "longitude": 80.2206
+    },
+    {
+        "bin_id": "BIN-005",
+        "latitude": 12.9830,
+        "longitude": 80.2594
+    },
+    {
+        "bin_id": "BIN-006",
+        "latitude": 13.0185,
+        "longitude": 80.2425
+    },
+    {
+        "bin_id": "BIN-007",
+        "latitude": 13.0280,
+        "longitude": 80.2480
+    },
+    {
+        "bin_id": "BIN-008",
+        "latitude": 12.9950,
+        "longitude": 80.2350
+    }
+]
 
-    # Simulate waste increasing or occasionally decreasing
-    change = random.choice([0, 1, 2, 3, 4, -1])
 
-    fill_level += change
+# ============================================================
+# STATUS CALCULATION
+# ============================================================
 
-    # Keep the value between 0% and 100%
-    fill_level = max(0, min(100, fill_level))
-
-    return fill_level
-
-
-def simulate_battery():
-    """
-    Simulates gradual battery usage.
-    """
-
-    global battery
-
-    battery -= random.choice([0, 0, 1])
-
-    battery = max(10, battery)
-
-    return battery
-
-
-def calculate_status(fill_level):
-    """
-    Determines the bin status from its fill level.
-    """
+def get_status(fill_level):
 
     if fill_level >= 90:
         return "CRITICAL"
 
-    elif fill_level >= 75:
-        return "WARNING"
+    elif fill_level >= 70:
+        return "HIGH"
 
-    elif fill_level >= 50:
+    elif fill_level >= 40:
         return "MODERATE"
 
     else:
-        return "NORMAL"
+        return "LOW"
 
 
-def generate_bin_data():
+# ============================================================
+# CREATE SENSOR PACKET
+# ============================================================
 
-    fill = simulate_ultrasonic_sensor()
-    battery_level = simulate_battery()
+def create_bin_packet(bin_info):
 
-    status = calculate_status(fill)
+    fill_level = random.randint(20, 100)
 
-    data = {
-        "bin_id": BIN_ID,
+    battery = random.randint(70, 100)
+
+    status = get_status(fill_level)
+
+    return {
+        "device_id": bin_info["bin_id"],
+
         "timestamp": datetime.now().isoformat(),
 
-        "fill_level": fill,
-        "battery": battery_level,
-        "status": status,
-
-        "latitude": LATITUDE,
-        "longitude": LONGITUDE
+        "payload": {
+            "fill_level": fill_level,
+            "battery": battery,
+            "status": status,
+            "latitude": bin_info["latitude"],
+            "longitude": bin_info["longitude"]
+        }
     }
 
-    return data
 
+# ============================================================
+# MAIN SIMULATOR
+# ============================================================
 
 def main():
 
-    print("===================================")
-    print("     SMARTBIN VIRTUAL SIMULATOR")
-    print("===================================")
+    print("\n========================================")
+    print("       🗑️ SMARTBIN AI SIMULATOR")
+    print("========================================")
+
+    print("\nSimulating 8 SmartBins...\n")
 
     while True:
 
-        bin_data = generate_bin_data()
+        for bin_info in BINS:
 
-        print("\n🗑️ VIRTUAL SMARTBIN")
-        print("---------------------------")
+            packet = create_bin_packet(bin_info)
 
-        print(f"Bin ID       : {bin_data['bin_id']}")
-        print(f"Fill Level   : {bin_data['fill_level']}%")
-        print(f"Battery      : {bin_data['battery']}%")
-        print(f"Status       : {bin_data['status']}")
-        print(f"Location     : {bin_data['latitude']}, {bin_data['longitude']}")
-        print(f"Timestamp    : {bin_data['timestamp']}")
+            payload = packet["payload"]
 
-        packet = create_lora_packet(bin_data)
-        transmit_packet(packet)
-        receive_packet(packet)
+            print("\n----------------------------------------")
 
-        print("\nWaiting for next reading...")
+            print(f"🗑️ BIN: {bin_info['bin_id']}")
 
-        time.sleep(5)
+            print(
+                f"📊 Fill Level: "
+                f"{payload['fill_level']}%"
+            )
 
+            print(
+                f"🔋 Battery: "
+                f"{payload['battery']}%"
+            )
+
+            print(
+                f"🚨 Status: "
+                f"{payload['status']}"
+            )
+
+            print(
+                f"📍 Location: "
+                f"{payload['latitude']}, "
+                f"{payload['longitude']}"
+            )
+
+            transmit_packet(packet)
+
+            time.sleep(2)
+
+
+# ============================================================
+# START
+# ============================================================
 
 if __name__ == "__main__":
     main()

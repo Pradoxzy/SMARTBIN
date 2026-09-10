@@ -2,27 +2,19 @@ from firebase_config import get_database
 
 
 def receive_packet(packet):
-    """
-    Simulates the municipal gateway receiving
-    a LoRaWAN packet and forwarding it to Firebase.
-    """
 
-    print("\n🏢 VIRTUAL MUNICIPAL GATEWAY")
-    print("----------------------------")
+    print("\n====================================")
+    print("   VIRTUAL MUNICIPAL GATEWAY")
+    print("====================================")
 
-    print(
-        f"📡 Packet received from: "
-        f"{packet['device_id']}"
-    )
-
-    print("📦 Decoding packet...")
-
+    device_id = packet["device_id"]
     payload = packet["payload"]
 
-    # Convert the received LoRaWAN payload
-    # into structured SmartBin data.
+    print(f"Packet received from: {device_id}")
+    print("Decoding packet...")
+
     data = {
-        "bin_id": packet["device_id"],
+        "bin_id": device_id,
         "timestamp": packet["timestamp"],
         "fill_level": payload["fill_level"],
         "battery": payload["battery"],
@@ -37,33 +29,30 @@ def receive_packet(packet):
     print(f"Fill Level : {data['fill_level']}%")
     print(f"Battery    : {data['battery']}%")
     print(f"Status     : {data['status']}")
-
     print(
         f"Location   : "
-        f"{data['latitude']}, {data['longitude']}"
+        f"{data['latitude']}, "
+        f"{data['longitude']}"
     )
 
-    print("\n☁️ Sending data to Firebase...")
-
     try:
-        # Get the Firebase database reference.
+
         database = get_database()
 
-        # get_database() already returns a Firebase
-        # Reference, so use .child() instead of
-        # calling .reference() again.
         reference = (
             database
             .child("bins")
-            .child(data["bin_id"])
+            .child(device_id)
         )
 
-        # Store the latest SmartBin data.
         reference.set(data)
 
-        print("✅ Firebase updated successfully!")
+        print(
+            f"Firebase updated successfully "
+            f"for {device_id}!"
+        )
 
     except Exception as error:
-        print("❌ Firebase update failed.")
+
+        print("Firebase update failed.")
         print("Error:", error)
-        

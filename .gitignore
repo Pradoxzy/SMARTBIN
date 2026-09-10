@@ -1,9 +1,28 @@
+.venv/
 venv/
 __pycache__/
 *.pyc
+
 .env
-.env.*
+.streamlit/secrets.toml
+
 serviceAccountKey.json
-firebase-service-account.json
+firebase-adminsdk*.json
+
+# Private Firebase credentials
 smartbin.json
-.DS_Store
+virtual/firebase-service-account.json
+
+# Other credential files
+serviceAccountKey.json
+firebase-adminsdk*.json
+
+# Python environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment secrets
+.env
+.streamlit/secrets.toml

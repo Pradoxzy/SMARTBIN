@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-
-
+from firebase_config import get_database
 # ============================================================
 # PAGE CONFIGURATION
 # ============================================================
@@ -20,48 +19,33 @@ st.set_page_config(
 # DATA
 # ============================================================
 
-bins = pd.DataFrame([
-    {
-        "Bin ID": "BIN-001",
-        "Location": "Area 1",
-        "Fill Level": 35,
-        "Status": "Normal",
-        "Latitude": 13.0827,
-        "Longitude": 80.2707
-    },
-    {
-        "Bin ID": "BIN-002",
-        "Location": "Area 2",
-        "Fill Level": 78,
-        "Status": "Warning",
-        "Latitude": 13.0838,
-        "Longitude": 80.2720
-    },
-    {
-        "Bin ID": "BIN-003",
-        "Location": "Area 3",
-        "Fill Level": 94,
-        "Status": "Critical",
-        "Latitude": 13.0819,
-        "Longitude": 80.2740
-    },
-    {
-        "Bin ID": "BIN-004",
-        "Location": "Area 4",
-        "Fill Level": 52,
-        "Status": "Normal",
-        "Latitude": 13.0848,
-        "Longitude": 80.2690
-    },
-    {
-        "Bin ID": "BIN-005",
-        "Location": "Area 5",
-        "Fill Level": 88,
-        "Status": "Warning",
-        "Latitude": 13.0805,
-        "Longitude": 80.2680
-    }
-])
+@st.cache_data(ttl=5)
+def load_bin_data():
+    database = get_database()
+
+    snapshot = database.reference("bins").get()
+
+    if not snapshot:
+        return pd.DataFrame()
+
+    rows = []
+
+    for bin_id, data in snapshot.items():
+        rows.append({
+            "Bin ID": data.get("bin_id", bin_id),
+            "Location": data.get("location", "Unknown"),
+            "Fill Level": data.get("fill_level", 0),
+            "Status": data.get("status", "NORMAL").title(),
+            "Battery": data.get("battery", 0),
+            "Latitude": data.get("latitude", 0),
+            "Longitude": data.get("longitude", 0),
+            "Timestamp": data.get("timestamp", "")
+        })
+
+    return pd.DataFrame(rows)
+
+
+bins = load_bin_data()
 
 # ============================================================
 # CUSTOM CSS

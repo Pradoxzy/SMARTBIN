@@ -5,4 +5,5 @@ __pycache__/
 .env.*
 serviceAccountKey.json
 firebase-service-account.json
+smartbin.json
 .DS_Store

@@ -1,2 +1,6 @@
+streamlit
 firebase-admin
+pandas
+folium
+streamlit-folium
 python-dotenv
